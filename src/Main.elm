@@ -5,11 +5,14 @@ import EventHelpers exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Json.Decode exposing (Value)
+import Message exposing (Msg(..))
 import Models exposing (..)
+import Slide
 import Views exposing (..)
 
 
-main : Program (Maybe Model) Model Msg
+main : Program Value Model Msg
 main =
     Browser.application
         { init = init
@@ -26,25 +29,25 @@ update msg model =
     case msg of
         KeyDown key ->
             if key == 13 then
-                addNewTask model
+                addNewData model
 
             else
                 ( model, Cmd.none )
 
         TextInput content ->
-            ( { model | taskInput = content }, Cmd.none )
+            ( { model | dataInput = content }, Cmd.none )
 
-        Move selectedTask ->
-            ( { model | movingTask = Just selectedTask }, Cmd.none )
+        Move selectedData ->
+            ( { model | movingData = Just selectedData }, Cmd.none )
 
         DragOver ->
             ( model, Cmd.none )
 
-        DropTask targetStatus ->
-            moveTask model targetStatus
+        DropData targetStatus ->
+            moveData model targetStatus
 
         Delete content ->
-            deleteTask model content
+            deleteData model content
 
         UrlChanged _ ->
             ( model, Cmd.none )
@@ -57,13 +60,20 @@ view : Model -> Browser.Document Msg
 view model =
     let
         todos =
-            getToDoTasks model
+            getToDoDatas model
 
         ongoing =
-            getOnGoingTasks model
+            getOnGoingDatas model
 
         dones =
-            getDoneTasks model
+            getDoneDatas model
+
+        actions =
+            { onDrop = DropData
+            , onDragOver = DragOver
+            , onDragStart = Move
+            , onDelete = Delete
+            }
     in
     { title = "Presentree"
     , body =
@@ -75,13 +85,13 @@ view model =
                 , tabindex 0
                 , onKeyDown KeyDown
                 , onInput TextInput
-                , value model.taskInput
+                , value model.dataInput
                 ]
                 []
             , div [ class "flex flex-row flex-1" ]
-                [ taskColumnView "Todo" todos
-                , taskColumnView "OnGoing" ongoing
-                , taskColumnView "Done" dones
+                [ Slide.kanbanView actions "Todo" todos
+                , Slide.kanbanView actions "OnGoing" ongoing
+                , Slide.kanbanView actions "Done" dones
                 ]
             ]
         ]

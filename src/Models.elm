@@ -1,31 +1,16 @@
 port module Models exposing (..)
 
-import Browser
 import Browser.Navigation
+import Data exposing (Data, DataType(..))
+import Json.Decode exposing (Decoder)
+import Json.Encode exposing (Value)
 import Url
 
 
-type Msg
-    = KeyDown Int
-    | TextInput String
-    | Move Task
-    | DragOver
-    | DropTask String
-    | Delete String
-    | LinkClicked Browser.UrlRequest
-    | UrlChanged Url.Url
-
-
-type alias Task =
-    { name : String
-    , status : String
-    }
-
-
 type alias Model =
-    { taskInput : String
-    , tasks : List Task
-    , movingTask : Maybe Task
+    { dataInput : String
+    , datas : List Data
+    , movingData : Maybe Data
     }
 
 
@@ -33,12 +18,17 @@ type alias Model =
 -- PORTS
 
 
-port setStorage : Model -> Cmd msg
+port setStorage : Value -> Cmd msg
 
 
-saveData : Model -> ( Model, Cmd Msg )
-saveData model =
-    ( model, setStorage model )
+encode : Model -> Value
+encode model =
+    Json.Encode.list Data.encode model.datas
+
+
+save : Model -> Cmd msg
+save model =
+    setStorage <| encode model
 
 
 
@@ -46,16 +36,24 @@ saveData model =
 
 
 type alias Flags =
-    Maybe Model
+    Json.Decode.Value
+
+
+decoder : Decoder Model
+decoder =
+    Json.Decode.map3 Model
+        (Json.Decode.succeed "")
+        (Json.Decode.list Data.decoder)
+        (Json.Decode.succeed Nothing)
 
 
 init : Flags -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd msg )
 init flags url key =
-    case flags of
-        Just model ->
+    case Json.Decode.decodeValue decoder flags of
+        Ok model ->
             ( model, Cmd.none )
 
-        Nothing ->
+        Err _ ->
             ( Model "" [] Nothing, Cmd.none )
 
 
@@ -63,79 +61,79 @@ init flags url key =
 -- ADD TASK
 
 
-addNewTask : Model -> ( Model, Cmd Msg )
-addNewTask model =
+addNewData : Model -> ( Model, Cmd msg )
+addNewData model =
     let
         newModel =
             { model
-                | tasks = model.tasks ++ [ Task model.taskInput "Todo" ]
-                , taskInput = ""
+                | datas = model.datas ++ [ Data model.dataInput "Todo" Source ]
+                , dataInput = ""
             }
     in
-    ( newModel, Cmd.batch [ setStorage newModel, Cmd.none ] )
+    ( newModel, save newModel )
 
 
 
 -- CHANGE TASK STATUS
 
 
-moveTaskToStatus : Task -> String -> List Task -> List Task
-moveTaskToStatus taskToFind newTaskStatus tasks =
+moveDataToStatus : Data -> String -> List Data -> List Data
+moveDataToStatus dataToFind newDataStatus datas =
     List.map
         (\t ->
-            if t.name == taskToFind.name then
-                { t | status = newTaskStatus }
+            if t.title == dataToFind.title then
+                { t | slide = newDataStatus }
 
             else
                 t
         )
-        tasks
+        datas
 
 
-moveTask : Model -> String -> ( Model, Cmd Msg )
-moveTask model targetStatus =
+moveData : Model -> String -> ( Model, Cmd msg )
+moveData model targetStatus =
     let
-        newTasks =
-            case model.movingTask of
-                Just task ->
-                    moveTaskToStatus task targetStatus model.tasks
+        newDatas =
+            case model.movingData of
+                Just data ->
+                    moveDataToStatus data targetStatus model.datas
 
                 Nothing ->
-                    model.tasks
+                    model.datas
 
         newModel =
-            { model | tasks = newTasks, movingTask = Nothing }
+            { model | datas = newDatas, movingData = Nothing }
     in
-    ( newModel, Cmd.batch [ setStorage newModel, Cmd.none ] )
+    ( newModel, save newModel )
 
 
 
 -- DELETE TASK
 
 
-deleteTask : Model -> String -> ( Model, Cmd Msg )
-deleteTask model name =
+deleteData : Model -> String -> ( Model, Cmd msg )
+deleteData model name =
     let
         newModel =
-            { model | tasks = List.filter (\x -> x.name /= name) model.tasks }
+            { model | datas = List.filter (\x -> x.title /= name) model.datas }
     in
-    ( newModel, Cmd.batch [ setStorage newModel, Cmd.none ] )
+    ( newModel, save newModel )
 
 
 
 -- GET TASKS BY STATUS
 
 
-getOnGoingTasks : Model -> List Task
-getOnGoingTasks model =
-    List.filter (\t -> t.status == "OnGoing") model.tasks
+getOnGoingDatas : Model -> List Data
+getOnGoingDatas model =
+    List.filter (\t -> t.slide == "OnGoing") model.datas
 
 
-getToDoTasks : Model -> List Task
-getToDoTasks model =
-    List.filter (\t -> t.status == "Todo") model.tasks
+getToDoDatas : Model -> List Data
+getToDoDatas model =
+    List.filter (\t -> t.slide == "Todo") model.datas
 
 
-getDoneTasks : Model -> List Task
-getDoneTasks model =
-    List.filter (\t -> t.status == "Done") model.tasks
+getDoneDatas : Model -> List Data
+getDoneDatas model =
+    List.filter (\t -> t.slide == "Done") model.datas
