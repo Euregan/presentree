@@ -1,6 +1,7 @@
 module Views exposing (..)
 
 import EventHelpers exposing (..)
+import Helpers exposing (isUrl)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -14,7 +15,7 @@ enrichItemContent : String -> Html msg
 enrichItemContent str =
     List.map
         (\word ->
-            if String.startsWith "http" word then
+            if isUrl word then
                 a [ target "_blank", href word ] [ text word ]
 
             else

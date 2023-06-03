@@ -66,7 +66,7 @@ addNewData model =
     let
         newModel =
             { model
-                | datas = model.datas ++ [ Data model.dataInput "Todo" Source ]
+                | datas = model.datas ++ [ Data.init model.dataInput ]
                 , dataInput = ""
             }
     in

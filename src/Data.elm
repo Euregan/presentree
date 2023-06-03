@@ -1,6 +1,7 @@
 module Data exposing (..)
 
 import EventHelpers exposing (onDragStart)
+import Helpers exposing (isUrl)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
@@ -10,7 +11,8 @@ import Views exposing (enrichItemContent)
 
 
 type DataType
-    = Source
+    = Note
+    | Source
 
 
 type alias Data =
@@ -24,6 +26,19 @@ type alias Actions msg =
     { onDragStart : Data -> msg
     , onDelete : String -> msg
     }
+
+
+init : String -> Data
+init content =
+    Data
+        content
+        "Todo"
+        (if isUrl content then
+            Source
+
+         else
+            Note
+        )
 
 
 kanbanView : Actions msg -> Data -> Html msg
@@ -50,6 +65,9 @@ encode data =
         encodeType : DataType -> Json.Encode.Value
         encodeType kind =
             case kind of
+                Note ->
+                    Json.Encode.string "note"
+
                 Source ->
                     Json.Encode.string "source"
     in
@@ -69,6 +87,9 @@ decoder =
                 |> Json.Decode.andThen
                     (\raw ->
                         case raw of
+                            "note" ->
+                                Json.Decode.succeed Note
+
                             "source" ->
                                 Json.Decode.succeed Source
 
