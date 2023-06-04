@@ -17,7 +17,7 @@ type alias Note =
 
 
 type alias Actions msg =
-    { onDragStart : Note -> msg
+    { onDragStart : ( Float, Float ) -> msg
     , onDelete : String -> msg
     }
 
@@ -29,16 +29,33 @@ init id content =
         content
 
 
-kanbanView : Actions msg -> Note -> Html msg
-kanbanView actions note =
-    Html.div
-        [ Html.Attributes.class "relative cursor-move rounded shadow bg-white p-4 pr-10 text-sm"
-        , Html.Events.onMouseDown <| actions.onDragStart note
+kanbanView : Actions msg -> Maybe ( Float, Float ) -> Note -> Html msg
+kanbanView actions position note =
+    let
+        attributes =
+            case position of
+                Just ( x, y ) ->
+                    [ Html.Attributes.class "absolute rotate-3"
+                    , Html.Attributes.style "left" <| String.fromFloat x ++ "px"
+                    , Html.Attributes.style "top" <| String.fromFloat y ++ "px"
+                    ]
 
-        -- , Html.Attributes.attribute "draggable" "true"
-        -- , onDragStart <| actions.onDragStart note
-        -- , Html.Attributes.attribute "ondragstart" "event.dataTransfer.setData('text/plain', '')"
-        ]
+                Nothing ->
+                    [ Html.Attributes.class "relative"
+                    ]
+    in
+    Html.div
+        ([ Html.Attributes.class "transition-transform cursor-move rounded shadow bg-white p-4 pr-10 text-sm w-64"
+         , Html.Events.on
+            "mousedown"
+           <|
+            Json.Decode.map2
+                (\x y -> actions.onDragStart ( x, y ))
+                (Json.Decode.field "clientX" Json.Decode.float)
+                (Json.Decode.field "clientY" Json.Decode.float)
+         ]
+            ++ attributes
+        )
         [ enrichItemContent note.content
         , Html.button
             [ Html.Attributes.class "block bg-red-700 text-white w-5 h-5 border-none rounded-xl absolute top-1/2 right-2.5 -translate-y-1/2 rotate-45 opacity-5 hover:opacity-100 cursor-pointer transition-opacity text-2xl leading-5"

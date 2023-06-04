@@ -1,6 +1,6 @@
 module Slide exposing (..)
 
-import EventHelpers exposing (onDragOver, onDrop)
+import DragState exposing (DragState)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
@@ -27,16 +27,15 @@ init id name =
 
 type alias Actions msg =
     { onDrop : Int -> msg
-    , onDragOver : msg
-    , onDragStart : Note -> msg
+    , onDragStart : Note -> ( Float, Float ) -> msg
     , onDelete : String -> msg
     , onTemporaryNewNoteChange : String -> msg
     , onNewNote : msg
     }
 
 
-kanbanView : Actions msg -> Bool -> Slide -> Html msg
-kanbanView actions movingNote slide =
+kanbanView : Actions msg -> DragState -> Slide -> Html msg
+kanbanView actions dragState slide =
     Html.li
         [ Html.Attributes.class "flex-1 m-3 p-3"
         , Html.Events.onMouseUp <| actions.onDrop <| List.length slide.notes + 1
@@ -45,14 +44,26 @@ kanbanView actions movingNote slide =
         , Html.ul [ Html.Attributes.class "my-3 mx-0" ] <|
             List.indexedMap
                 (\index note ->
+                    let
+                        position =
+                            Maybe.andThen
+                                (\state ->
+                                    if state.dragging.id == note.id then
+                                        Just state.position
+
+                                    else
+                                        Nothing
+                                )
+                                dragState
+                    in
                     Html.li
-                        [ Html.Attributes.class "group"
+                        [ Html.Attributes.class "group select-none"
                         , Html.Events.onMouseUp <| actions.onDrop index
                         ]
                         [ Html.div
                             [ Html.Attributes.class "h-3 transition-all w-full"
                             , Html.Attributes.class <|
-                                if movingNote then
+                                if dragState /= Nothing then
                                     "group-hover:h-14"
 
                                 else
@@ -60,9 +71,10 @@ kanbanView actions movingNote slide =
                             ]
                             []
                         , Note.kanbanView
-                            { onDragStart = actions.onDragStart
+                            { onDragStart = actions.onDragStart note
                             , onDelete = actions.onDelete
                             }
+                            position
                             note
                         ]
                 )

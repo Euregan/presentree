@@ -1,6 +1,7 @@
 port module Models exposing (..)
 
 import Browser.Navigation
+import DragState exposing (DragState)
 import Json.Decode exposing (Decoder)
 import Json.Encode exposing (Value)
 import Note exposing (Note)
@@ -14,13 +15,9 @@ type alias Model =
     { dataInput : String
     , newSlideName : String
     , slides : List Slide
-    , movingNote : Maybe Note
+    , dragState : DragState
     , seed : Seeds
     }
-
-
-
--- PORTS
 
 
 port setStorage : Value -> Cmd msg

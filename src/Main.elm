@@ -30,19 +30,32 @@ main =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Move note ->
-            ( { model | movingNote = Just note }, Cmd.none )
+        Grab note position ->
+            ( { model
+                | dragState =
+                    Just
+                        { dragging = note
+                        , position = position
+                        }
+              }
+            , Cmd.none
+            )
 
-        DragOver ->
-            ( model, Cmd.none )
+        MouseMoved newPosition ->
+            case model.dragState of
+                Just dragState ->
+                    ( { model | dragState = Just { dragState | position = newPosition } }, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
 
         DropNote maybeTarget ->
-            case ( maybeTarget, model.movingNote ) of
-                ( Just ( targetSlide, targetIndex ), Just movingNote ) ->
+            case ( maybeTarget, model.dragState ) of
+                ( Just ( targetSlide, targetIndex ), Just dragState ) ->
                     let
                         updatedModel =
                             { model
-                                | movingNote = Nothing
+                                | dragState = Nothing
                                 , slides =
                                     model.slides
                                         |> List.map
@@ -50,7 +63,7 @@ update msg model =
                                                 { slide
                                                     | notes =
                                                         List.filter
-                                                            (\note -> note.id /= movingNote.id)
+                                                            (\note -> note.id /= dragState.dragging.id)
                                                             slide.notes
                                                 }
                                             )
@@ -60,13 +73,13 @@ update msg model =
                                                     { slide
                                                         | notes =
                                                             if targetIndex > List.length slide.notes then
-                                                                slide.notes ++ [ movingNote ]
+                                                                slide.notes ++ [ dragState.dragging ]
 
                                                             else
                                                                 List.indexedMap
                                                                     (\index note ->
                                                                         if index == targetIndex then
-                                                                            [ movingNote, note ]
+                                                                            [ dragState.dragging, note ]
 
                                                                         else
                                                                             [ note ]
@@ -83,7 +96,7 @@ update msg model =
                     ( updatedModel, save updatedModel )
 
                 _ ->
-                    ( { model | movingNote = Nothing }, Cmd.none )
+                    ( { model | dragState = Nothing }, Cmd.none )
 
         Delete content ->
             ( model, Cmd.none )
@@ -165,13 +178,12 @@ view model =
                     (\slide ->
                         Slide.kanbanView
                             { onDrop = \index -> DropNote (Just ( slide, index ))
-                            , onDragOver = DragOver
-                            , onDragStart = Move
+                            , onDragStart = Grab
                             , onDelete = Delete
                             , onTemporaryNewNoteChange = TemporaryNewNoteChanged slide
                             , onNewNote = NewNote slide
                             }
-                            (model.movingNote /= Nothing)
+                            model.dragState
                             slide
                     )
                     model.slides
@@ -194,11 +206,17 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    [ if model.movingNote /= Nothing then
-        Just <| Browser.Events.onMouseUp <| Json.Decode.succeed <| DropNote Nothing
-
-      else
-        Nothing
+    [ Maybe.map
+        (\_ -> Browser.Events.onMouseUp <| Json.Decode.succeed <| DropNote Nothing)
+        model.dragState
+    , Maybe.map
+        (\_ ->
+            Browser.Events.onMouseMove <|
+                Json.Decode.map2 (\x y -> MouseMoved ( x, y ))
+                    (Json.Decode.field "clientX" Json.Decode.float)
+                    (Json.Decode.field "clientY" Json.Decode.float)
+        )
+        model.dragState
     ]
         |> List.foldl
             (\maybeSubscription acc ->

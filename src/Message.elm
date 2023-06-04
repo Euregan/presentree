@@ -7,8 +7,8 @@ import Url
 
 
 type Msg
-    = Move Note
-    | DragOver
+    = Grab Note ( Float, Float )
+    | MouseMoved ( Float, Float )
     | DropNote (Maybe ( Slide, Int ))
     | Delete String
     | TemporaryNewSlideNameChanged String
