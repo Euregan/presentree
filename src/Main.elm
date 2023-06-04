@@ -7,9 +7,11 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode
+import Kanban
 import Message exposing (Msg(..))
 import Models exposing (..)
 import Note
+import Presentation
 import Slide
 import UUID
 import Views exposing (..)
@@ -179,6 +181,9 @@ update msg model =
             in
             ( updatedModel, save updatedModel )
 
+        SwitchMode mode ->
+            ( { model | mode = mode }, Cmd.none )
+
         UrlChanged _ ->
             ( model, Cmd.none )
 
@@ -190,34 +195,12 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Presentree"
     , body =
-        [ div [ class "w-full h-full flex flex-col bg-slate-100 dark" ]
-            [ ul [ class "flex flex-row flex-1" ] <|
-                List.map
-                    (\slide ->
-                        Slide.kanbanView
-                            { onDrop = \index -> DropNote (Just ( slide, index ))
-                            , onDragStart = Grab
-                            , onDelete = Delete
-                            , onTemporaryNewNoteChange = TemporaryNewNoteChanged slide
-                            , onNewNote = NewNote slide
-                            }
-                            model.dragState
-                            slide
-                    )
-                    model.slides
-                    ++ [ Html.li []
-                            [ Html.form
-                                [ Html.Events.onSubmit NewSlide
-                                ]
-                                [ Html.input
-                                    [ Html.Attributes.value model.newSlideName
-                                    , Html.Events.onInput TemporaryNewSlideNameChanged
-                                    ]
-                                    []
-                                ]
-                            ]
-                       ]
-            ]
+        [ case model.mode of
+            Kanban ->
+                Kanban.view model
+
+            Presentation ->
+                Presentation.view model
         ]
     }
 

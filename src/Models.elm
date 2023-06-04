@@ -10,11 +10,16 @@ import UUID exposing (Seeds)
 import Url
 
 
+type Mode
+    = Kanban
+    | Presentation
+
+
 type alias Model =
-    { dataInput : String
-    , newSlideName : String
+    { newSlideName : String
     , slides : List Slide
     , dragState : DragState
+    , mode : Mode
     , seed : Seeds
     }
 
@@ -57,9 +62,9 @@ decoder : Int -> Decoder Model
 decoder seed =
     Json.Decode.map5 Model
         (Json.Decode.succeed "")
-        (Json.Decode.succeed "")
         (Json.Decode.list Slide.decoder)
         (Json.Decode.succeed Nothing)
+        (Json.Decode.succeed Kanban)
         (Json.Decode.succeed <| initialSeeds seed)
 
 
@@ -70,7 +75,7 @@ init flags _ _ =
             ( model, Cmd.none )
 
         Err _ ->
-            ( Model "" "" [] Nothing (initialSeeds flags.seed), Cmd.none )
+            ( Model "" [] Nothing Kanban (initialSeeds flags.seed), Cmd.none )
 
 
 port pastedImage : ({ slideId : String, image : String } -> msg) -> Sub msg

@@ -1,6 +1,7 @@
 module Message exposing (..)
 
 import Browser
+import Models exposing (Mode)
 import Note exposing (Note)
 import Slide exposing (Slide)
 import Url
@@ -12,6 +13,7 @@ type Msg
     | DropNote (Maybe ( Slide, Int ))
     | Delete String
     | PastedImage { slideId : String, image : String }
+    | SwitchMode Mode
     | TemporaryNewSlideNameChanged String
     | NewSlide
     | TemporaryNewNoteChanged Slide String
