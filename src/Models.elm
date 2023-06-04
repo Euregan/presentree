@@ -64,7 +64,7 @@ decoder seed =
 
 
 init : Flags -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd msg )
-init flags url key =
+init flags _ _ =
     case Json.Decode.decodeValue (decoder flags.seed) flags.model of
         Ok model ->
             ( model, Cmd.none )

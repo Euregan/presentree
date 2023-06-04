@@ -6,7 +6,7 @@ import EventHelpers exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Json.Decode exposing (Value)
+import Json.Decode
 import Message exposing (Msg(..))
 import Models exposing (..)
 import Note
@@ -98,7 +98,7 @@ update msg model =
                 _ ->
                     ( { model | dragState = Nothing }, Cmd.none )
 
-        Delete content ->
+        Delete _ ->
             ( model, Cmd.none )
 
         TemporaryNewSlideNameChanged name ->

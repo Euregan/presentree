@@ -1,6 +1,5 @@
 module Note exposing (..)
 
-import EventHelpers exposing (onDragStart)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
