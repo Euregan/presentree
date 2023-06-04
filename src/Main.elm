@@ -1,6 +1,7 @@
 module Main exposing (..)
 
 import Browser
+import Browser.Events
 import EventHelpers exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -193,4 +194,20 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    [ if model.movingNote /= Nothing then
+        Just <| Browser.Events.onMouseUp <| Json.Decode.succeed <| DropNote Nothing
+
+      else
+        Nothing
+    ]
+        |> List.foldl
+            (\maybeSubscription acc ->
+                case maybeSubscription of
+                    Just subscription ->
+                        acc ++ [ subscription ]
+
+                    Nothing ->
+                        acc
+            )
+            []
+        |> Sub.batch
