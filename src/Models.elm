@@ -4,7 +4,6 @@ import Browser.Navigation
 import DragState exposing (DragState)
 import Json.Decode exposing (Decoder)
 import Json.Encode exposing (Value)
-import Note exposing (Note)
 import Random
 import Slide exposing (Slide)
 import UUID exposing (Seeds)
@@ -72,3 +71,6 @@ init flags url key =
 
         Err _ ->
             ( Model "" "" [] Nothing (initialSeeds flags.seed), Cmd.none )
+
+
+port pastedImage : ({ slideId : String, image : String } -> msg) -> Sub msg

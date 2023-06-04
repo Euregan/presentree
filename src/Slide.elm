@@ -14,6 +14,7 @@ import UUID exposing (UUID)
 type alias Slide =
     { id : UUID
     , title : String
+    , image : Maybe String
     , notes : List Note
     , sources : List Source
     , temporaryNewNote : String
@@ -22,7 +23,7 @@ type alias Slide =
 
 init : UUID -> String -> Slide
 init id name =
-    Slide id name [] [] ""
+    Slide id name Nothing [] [] ""
 
 
 type alias Actions msg =
@@ -41,6 +42,12 @@ kanbanView actions dragState slide =
         , Html.Events.onMouseUp <| actions.onDrop <| List.length slide.notes + 1
         ]
         [ Html.h2 [ Html.Attributes.class "m-0 p-0 text-base uppercase" ] [ Html.text slide.title ]
+        , case slide.image of
+            Just image ->
+                Html.img [ Html.Attributes.src image, Html.Attributes.class "w-64" ] []
+
+            Nothing ->
+                Html.text ""
         , Html.ul [ Html.Attributes.class "my-3 mx-0" ] <|
             List.indexedMap
                 (\index note ->
@@ -84,6 +91,7 @@ kanbanView actions dragState slide =
                             [ Html.input
                                 [ Html.Attributes.value slide.temporaryNewNote
                                 , Html.Events.onInput actions.onTemporaryNewNoteChange
+                                , Html.Attributes.id <| UUID.toString slide.id
                                 ]
                                 []
                             ]
@@ -94,9 +102,19 @@ kanbanView actions dragState slide =
 
 encode : Slide -> Json.Encode.Value
 encode slide =
+    let
+        encodedImage =
+            case slide.image of
+                Just image ->
+                    Json.Encode.string image
+
+                Nothing ->
+                    Json.Encode.null
+    in
     Json.Encode.object
         [ ( "id", Json.Encode.string <| UUID.toString slide.id )
         , ( "title", Json.Encode.string slide.title )
+        , ( "image", encodedImage )
         , ( "notes", Json.Encode.list Note.encode slide.notes )
         , ( "sources", Json.Encode.list Source.encode slide.sources )
         ]
@@ -104,9 +122,10 @@ encode slide =
 
 decoder : Decoder Slide
 decoder =
-    Json.Decode.map5 Slide
+    Json.Decode.map6 Slide
         (Json.Decode.field "id" UUID.jsonDecoder)
         (Json.Decode.field "title" Json.Decode.string)
+        (Json.Decode.field "image" <| Json.Decode.nullable Json.Decode.string)
         (Json.Decode.field "notes" <| Json.Decode.list Note.decoder)
         (Json.Decode.field "sources" <| Json.Decode.list Source.decoder)
         (Json.Decode.succeed "")

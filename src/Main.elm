@@ -161,6 +161,24 @@ update msg model =
             in
             ( updatedModel, save updatedModel )
 
+        PastedImage { slideId, image } ->
+            let
+                updatedModel =
+                    { model
+                        | slides =
+                            List.map
+                                (\slide ->
+                                    if Ok slide.id == UUID.fromString slideId then
+                                        { slide | image = Just image }
+
+                                    else
+                                        slide
+                                )
+                                model.slides
+                    }
+            in
+            ( updatedModel, save updatedModel )
+
         UrlChanged _ ->
             ( model, Cmd.none )
 
@@ -217,6 +235,7 @@ subscriptions model =
                     (Json.Decode.field "clientY" Json.Decode.float)
         )
         model.dragState
+    , Just (pastedImage PastedImage)
     ]
         |> List.foldl
             (\maybeSubscription acc ->

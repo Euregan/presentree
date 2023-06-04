@@ -1,29 +1,31 @@
-import config from "./config";
 import { Elm } from "./Main.elm";
 
-fetch(config.URL + "/latest", {
-  headers: {
-    "X-Access-Key": config.SECRET,
-  },
-})
-  .then((response) => response.json())
-  .then(({ record }) => {
-    const app = Elm.Main.init({
-      node: document.getElementById("root"),
-      flags: {
-        model: record,
-        seed: Math.floor(Math.random() * 7849834834832003),
-      },
-    });
+const initialState = localStorage.getItem("presentree");
 
-    app.ports.setStorage.subscribe(function (state) {
-      fetch(config.URL, {
-        method: "PUT",
-        headers: {
-          "content-type": "application/json",
-          "X-Access-Key": config.SECRET,
-        },
-        body: JSON.stringify(state),
-      });
-    });
-  });
+const app = Elm.Main.init({
+  node: document.getElementById("root"),
+  flags: {
+    model: initialState ? JSON.parse(initialState) : [],
+    seed: Math.floor(Math.random() * 7849834834832003),
+  },
+});
+
+app.ports.setStorage.subscribe((state) =>
+  localStorage.setItem("presentree", JSON.stringify(state))
+);
+
+document.addEventListener("paste", async (event) => {
+  for (const clipboardItem of event.clipboardData.files) {
+    if (clipboardItem.type.startsWith("image/")) {
+      event.preventDefault();
+
+      const reader = new FileReader();
+      reader.onloadend = () =>
+        app.ports.pastedImage.send({
+          slideId: event.target.id,
+          image: reader.result,
+        });
+      reader.readAsDataURL(clipboardItem);
+    }
+  }
+});

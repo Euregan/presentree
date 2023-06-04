@@ -11,6 +11,7 @@ type Msg
     | MouseMoved ( Float, Float )
     | DropNote (Maybe ( Slide, Int ))
     | Delete String
+    | PastedImage { slideId : String, image : String }
     | TemporaryNewSlideNameChanged String
     | NewSlide
     | TemporaryNewNoteChanged Slide String
