@@ -8,11 +8,13 @@ import Html.Events exposing (..)
 import Json.Decode exposing (Value)
 import Message exposing (Msg(..))
 import Models exposing (..)
+import Note
 import Slide
+import UUID
 import Views exposing (..)
 
 
-main : Program Value Model Msg
+main : Program Flags Model Msg
 main =
     Browser.application
         { init = init
@@ -27,27 +29,77 @@ main =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        KeyDown key ->
-            if key == 13 then
-                addNewData model
-
-            else
-                ( model, Cmd.none )
-
-        TextInput content ->
-            ( { model | dataInput = content }, Cmd.none )
-
-        Move selectedData ->
-            ( { model | movingData = Just selectedData }, Cmd.none )
+        Move note ->
+            ( model, Cmd.none )
 
         DragOver ->
             ( model, Cmd.none )
 
-        DropData targetStatus ->
-            moveData model targetStatus
+        DropNote targetSlide ->
+            ( model, Cmd.none )
 
         Delete content ->
-            deleteData model content
+            ( model, Cmd.none )
+
+        TemporaryNewSlideNameChanged name ->
+            ( { model | newSlideName = name }, Cmd.none )
+
+        NewSlide ->
+            let
+                ( id, newSeed ) =
+                    UUID.step model.seed
+
+                updatedModel =
+                    { model
+                        | newSlideName = ""
+                        , slides = model.slides ++ [ Slide.init id model.newSlideName ]
+                        , seed = newSeed
+                    }
+            in
+            ( updatedModel
+            , save updatedModel
+            )
+
+        TemporaryNewNoteChanged noteSlide newContent ->
+            ( { model
+                | slides =
+                    List.map
+                        (\slide ->
+                            if noteSlide.id == slide.id then
+                                { slide | temporaryNewNote = newContent }
+
+                            else
+                                slide
+                        )
+                        model.slides
+              }
+            , Cmd.none
+            )
+
+        NewNote noteSlide ->
+            let
+                ( id, newSeed ) =
+                    UUID.step model.seed
+
+                updatedModel =
+                    { model
+                        | slides =
+                            List.map
+                                (\slide ->
+                                    if noteSlide.id == slide.id then
+                                        { slide
+                                            | temporaryNewNote = ""
+                                            , notes = slide.notes ++ [ Note.init id slide.temporaryNewNote ]
+                                        }
+
+                                    else
+                                        noteSlide
+                                )
+                                model.slides
+                        , seed = newSeed
+                    }
+            in
+            ( updatedModel, save updatedModel )
 
         UrlChanged _ ->
             ( model, Cmd.none )
@@ -58,41 +110,35 @@ update msg model =
 
 view : Model -> Browser.Document Msg
 view model =
-    let
-        todos =
-            getToDoDatas model
-
-        ongoing =
-            getOnGoingDatas model
-
-        dones =
-            getDoneDatas model
-
-        actions =
-            { onDrop = DropData
-            , onDragOver = DragOver
-            , onDragStart = Move
-            , onDelete = Delete
-            }
-    in
     { title = "Presentree"
     , body =
         [ div [ class "w-full h-full flex flex-col bg-slate-100 dark" ]
-            [ input
-                [ type_ "text"
-                , class "p-3 h-12 text-base border-none shadow-sm"
-                , placeholder "What's on your mind right now?"
-                , tabindex 0
-                , onKeyDown KeyDown
-                , onInput TextInput
-                , value model.dataInput
-                ]
-                []
-            , div [ class "flex flex-row flex-1" ]
-                [ Slide.kanbanView actions "Todo" todos
-                , Slide.kanbanView actions "OnGoing" ongoing
-                , Slide.kanbanView actions "Done" dones
-                ]
+            [ ul [ class "flex flex-row flex-1" ] <|
+                List.map
+                    (\slide ->
+                        Slide.kanbanView
+                            { onDrop = DropNote slide
+                            , onDragOver = DragOver
+                            , onDragStart = Move
+                            , onDelete = Delete
+                            , onTemporaryNewNoteChange = TemporaryNewNoteChanged slide
+                            , onNewNote = NewNote slide
+                            }
+                            slide
+                    )
+                    model.slides
+                    ++ [ Html.li []
+                            [ Html.form
+                                [ Html.Events.onSubmit NewSlide
+                                ]
+                                [ Html.input
+                                    [ Html.Attributes.value model.newSlideName
+                                    , Html.Events.onInput TemporaryNewSlideNameChanged
+                                    ]
+                                    []
+                                ]
+                            ]
+                       ]
             ]
         ]
     }

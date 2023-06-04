@@ -10,7 +10,7 @@ fetch(config.URL + "/latest", {
   .then(({ record }) => {
     const app = Elm.Main.init({
       node: document.getElementById("root"),
-      flags: record,
+      flags: { model: record, seed: Math.random() * 7849834834832003 },
     });
 
     app.ports.setStorage.subscribe(function (state) {
