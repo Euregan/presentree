@@ -26,7 +26,7 @@ init id name =
 
 
 type alias Actions msg =
-    { onDrop : msg
+    { onDrop : Int -> msg
     , onDragOver : msg
     , onDragStart : Note -> msg
     , onDelete : String -> msg
@@ -35,20 +35,36 @@ type alias Actions msg =
     }
 
 
-kanbanView : Actions msg -> Slide -> Html msg
-kanbanView actions slide =
+kanbanView : Actions msg -> Bool -> Slide -> Html msg
+kanbanView actions movingNote slide =
     Html.li
         [ Html.Attributes.class "flex-1 m-3 p-3"
-        , onDrop <| actions.onDrop
-        , onDragOver <| actions.onDragOver
+        , Html.Events.onMouseUp <| actions.onDrop <| List.length slide.notes + 1
         ]
         [ Html.h2 [ Html.Attributes.class "m-0 p-0 text-base uppercase" ] [ Html.text slide.title ]
         , Html.ul [ Html.Attributes.class "my-3 mx-0" ] <|
-            List.map
-                (Note.kanbanView
-                    { onDragStart = actions.onDragStart
-                    , onDelete = actions.onDelete
-                    }
+            List.indexedMap
+                (\index note ->
+                    Html.li
+                        [ Html.Attributes.class "group"
+                        , Html.Events.onMouseUp <| actions.onDrop index
+                        ]
+                        [ Html.div
+                            [ Html.Attributes.class "h-3 transition-all w-full"
+                            , Html.Attributes.class <|
+                                if movingNote then
+                                    "group-hover:h-14"
+
+                                else
+                                    ""
+                            ]
+                            []
+                        , Note.kanbanView
+                            { onDragStart = actions.onDragStart
+                            , onDelete = actions.onDelete
+                            }
+                            note
+                        ]
                 )
                 slide.notes
                 ++ [ Html.li []

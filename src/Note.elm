@@ -30,18 +30,20 @@ init id content =
 
 
 kanbanView : Actions msg -> Note -> Html msg
-kanbanView actions data =
-    Html.li
-        [ Html.Attributes.class "relative cursor-move rounded shadow bg-white p-4 pr-10 mb-3 text-sm"
-        , Html.Attributes.attribute "draggable" "true"
-        , onDragStart <| actions.onDragStart data
-        , Html.Attributes.attribute "ondragstart" "event.dataTransfer.setData('text/plain', '')"
+kanbanView actions note =
+    Html.div
+        [ Html.Attributes.class "relative cursor-move rounded shadow bg-white p-4 pr-10 text-sm"
+        , Html.Events.onMouseDown <| actions.onDragStart note
+
+        -- , Html.Attributes.attribute "draggable" "true"
+        -- , onDragStart <| actions.onDragStart note
+        -- , Html.Attributes.attribute "ondragstart" "event.dataTransfer.setData('text/plain', '')"
         ]
-        [ enrichItemContent data.content
+        [ enrichItemContent note.content
         , Html.button
             [ Html.Attributes.class "block bg-red-700 text-white w-5 h-5 border-none rounded-xl absolute top-1/2 right-2.5 -translate-y-1/2 rotate-45 opacity-5 hover:opacity-100 cursor-pointer transition-opacity text-2xl leading-5"
             , Html.Attributes.style "font-family" "initial"
-            , Html.Events.onClick <| actions.onDelete data.content
+            , Html.Events.onClick <| actions.onDelete note.content
             ]
             [ Html.text "+" ]
         ]

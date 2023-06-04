@@ -9,7 +9,7 @@ import Url
 type Msg
     = Move Note
     | DragOver
-    | DropNote Slide
+    | DropNote (Maybe ( Slide, Int ))
     | Delete String
     | TemporaryNewSlideNameChanged String
     | NewSlide

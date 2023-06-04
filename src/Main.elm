@@ -30,13 +30,59 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Move note ->
-            ( model, Cmd.none )
+            ( { model | movingNote = Just note }, Cmd.none )
 
         DragOver ->
             ( model, Cmd.none )
 
-        DropNote targetSlide ->
-            ( model, Cmd.none )
+        DropNote maybeTarget ->
+            case ( maybeTarget, model.movingNote ) of
+                ( Just ( targetSlide, targetIndex ), Just movingNote ) ->
+                    let
+                        updatedModel =
+                            { model
+                                | movingNote = Nothing
+                                , slides =
+                                    model.slides
+                                        |> List.map
+                                            (\slide ->
+                                                { slide
+                                                    | notes =
+                                                        List.filter
+                                                            (\note -> note.id /= movingNote.id)
+                                                            slide.notes
+                                                }
+                                            )
+                                        |> List.map
+                                            (\slide ->
+                                                if slide.id == targetSlide.id then
+                                                    { slide
+                                                        | notes =
+                                                            if targetIndex > List.length slide.notes then
+                                                                slide.notes ++ [ movingNote ]
+
+                                                            else
+                                                                List.indexedMap
+                                                                    (\index note ->
+                                                                        if index == targetIndex then
+                                                                            [ movingNote, note ]
+
+                                                                        else
+                                                                            [ note ]
+                                                                    )
+                                                                    slide.notes
+                                                                    |> List.concat
+                                                    }
+
+                                                else
+                                                    slide
+                                            )
+                            }
+                    in
+                    ( updatedModel, save updatedModel )
+
+                _ ->
+                    ( { model | movingNote = Nothing }, Cmd.none )
 
         Delete content ->
             ( model, Cmd.none )
@@ -93,7 +139,7 @@ update msg model =
                                         }
 
                                     else
-                                        noteSlide
+                                        slide
                                 )
                                 model.slides
                         , seed = newSeed
@@ -117,13 +163,14 @@ view model =
                 List.map
                     (\slide ->
                         Slide.kanbanView
-                            { onDrop = DropNote slide
+                            { onDrop = \index -> DropNote (Just ( slide, index ))
                             , onDragOver = DragOver
                             , onDragStart = Move
                             , onDelete = Delete
                             , onTemporaryNewNoteChange = TemporaryNewNoteChanged slide
                             , onNewNote = NewNote slide
                             }
+                            (model.movingNote /= Nothing)
                             slide
                     )
                     model.slides
