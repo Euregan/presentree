@@ -10,18 +10,17 @@ view : Model -> Html Msg
 view model =
     case model.slides of
         slide :: _ ->
-            case slide.image of
-                Just image ->
-                    Html.div [ Html.Attributes.class "w-full h-full" ]
-                        [ Html.img
-                            [ Html.Attributes.src image
-                            , Html.Attributes.class "w-full h-full"
-                            ]
-                            []
-                        ]
+            Html.div
+                [ Html.Attributes.class "flex w-full h-full bg-cover bg-center"
+                , Html.Attributes.style "background-image" <|
+                    case slide.image of
+                        Just image ->
+                            "url(" ++ image ++ ")"
 
-                _ ->
-                    Html.text ""
+                        Nothing ->
+                            ""
+                ]
+                []
 
         _ ->
             Html.text ""

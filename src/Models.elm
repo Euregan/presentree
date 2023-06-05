@@ -1,24 +1,18 @@
 port module Models exposing (..)
 
 import Browser.Navigation
-import DragState exposing (DragState)
 import Json.Decode exposing (Decoder)
 import Json.Encode exposing (Value)
+import Kanban
+import Mode exposing (Mode(..))
 import Random
 import Slide exposing (Slide)
 import UUID exposing (Seeds)
 import Url
 
 
-type Mode
-    = Kanban
-    | Presentation
-
-
 type alias Model =
-    { newSlideName : String
-    , slides : List Slide
-    , dragState : DragState
+    { slides : List Slide
     , mode : Mode
     , seed : Seeds
     }
@@ -60,11 +54,9 @@ initialSeeds seed =
 
 decoder : Int -> Decoder Model
 decoder seed =
-    Json.Decode.map5 Model
-        (Json.Decode.succeed "")
+    Json.Decode.map3 Model
         (Json.Decode.list Slide.decoder)
-        (Json.Decode.succeed Nothing)
-        (Json.Decode.succeed Kanban)
+        (Json.Decode.succeed <| Kanban Kanban.init)
         (Json.Decode.succeed <| initialSeeds seed)
 
 
@@ -75,7 +67,7 @@ init flags _ _ =
             ( model, Cmd.none )
 
         Err _ ->
-            ( Model "" [] Nothing Kanban (initialSeeds flags.seed), Cmd.none )
+            ( Model [] (Kanban Kanban.init) (initialSeeds flags.seed), Cmd.none )
 
 
 port pastedImage : ({ slideId : String, image : String } -> msg) -> Sub msg

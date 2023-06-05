@@ -1,7 +1,7 @@
 module Message exposing (..)
 
 import Browser
-import Models exposing (Mode)
+import Mode exposing (Mode)
 import Note exposing (Note)
 import Slide exposing (Slide)
 import Url
