@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "start": "parcel src/index.html",
-    "build": "parcel build src/index.html && cp -r ./public ./dist"
+    "build": "parcel build src/index.html"
   },
   "devDependencies": {
     "@parcel/transformer-elm": "^2.9.1",
